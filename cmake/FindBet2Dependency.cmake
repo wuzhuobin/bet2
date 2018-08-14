@@ -1,0 +1,20 @@
+list(
+    APPEND
+    PROJECT_LIBRARY
+    newmat
+    fslio
+    newimage
+    niftiio
+    znzlib
+    meshclass
+    utils
+    miscmaths
+    vtkzlib
+)
+list(
+    APPEND
+    PROJECT_INCLUDE
+    ${PROJECT_SOURCE_DIR}/newmat
+    ${PROJECT_SOURCE_DIR}/fslio 
+    ${PROJECT_SOURCE_DIR}/newimage
+)
