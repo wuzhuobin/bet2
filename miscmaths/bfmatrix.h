@@ -89,7 +89,7 @@
 #define BFMatrix_h
 
 #include <boost/shared_ptr.hpp>
-#include "newmat.h"
+#include "../newmat/newmat.h"
 #include "SpMat.h"
 #include "cg.h"
 #include "bicg.h"

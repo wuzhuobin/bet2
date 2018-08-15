@@ -68,9 +68,9 @@
 
 #include <cmath>
 #include "t2z.h"
-#include "newmat.h"
-#include "utils/tracer_plus.h"
-#include "libprob.h"
+#include "../newmat/newmat.h"
+#include "../utils/tracer_plus.h"
+#include "../libprob/libprob.h"
 
 using namespace NEWMAT;
 using namespace Utilities;

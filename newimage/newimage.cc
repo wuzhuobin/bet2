@@ -70,9 +70,9 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
-#include "newmatio.h"
+#include "../newmat/newmatio.h"
 #include "newimage.h"
-#include "fslio/fslio.h"
+#include "../fslio/fslio.h"
 
 using namespace NEWMAT;
 using namespace LAZY;

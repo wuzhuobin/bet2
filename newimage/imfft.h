@@ -76,8 +76,8 @@
 #include <fstream>
 //#include <unistd.h>
 
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/../newmat/../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 #include "newimage.h"
 #include "complexvolume.h"
 

@@ -74,8 +74,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 #include "miscmaths.h"
 
 #define WANT_STREAM

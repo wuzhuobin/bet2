@@ -75,11 +75,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "newmatio.h"
+#include "../newmat/newmatio.h"
 #include "newimage.h"
 #include "complexvolume.h"
-#include "fslio/fslio.h"
-#include "miscmaths/miscmaths.h"
+#include "../fslio/fslio.h"
+#include "../miscmaths/miscmaths.h"
 
 #ifdef WIN32 || WIN64
 typedef signed long long int int64_t;

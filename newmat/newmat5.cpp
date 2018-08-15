@@ -6,7 +6,7 @@
 
 #include "include.h"
 
-#include "newmat.h"
+#include "../newmat/../newmat/newmat.h"
 #include "newmatrc.h"
 
 #ifdef use_namespace

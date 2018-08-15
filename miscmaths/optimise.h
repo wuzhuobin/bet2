@@ -73,7 +73,7 @@
 #define __optimise_h
 
 #include <cmath>
-#include "newmatap.h"
+#include "../newmat/newmatap.h"
 #include "string"
 
 using namespace NEWMAT;

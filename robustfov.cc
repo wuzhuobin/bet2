@@ -73,7 +73,7 @@
 
 #include <stdlib.h>
 #include "newimage/newimageall.h"
-#include "miscmaths/miscmaths.h"
+#include "../miscmaths/miscmaths.h"
 #include "utils/options.h"
 
 using namespace MISCMATHS;

@@ -75,7 +75,7 @@
 #include <string>
 #include <set>
 #include <cmath>
-#include "newmat.h"
+#include "../newmat/newmat.h"
       
 using namespace NEWMAT;
 using namespace std;

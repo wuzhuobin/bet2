@@ -76,7 +76,7 @@
 #define WANT_MATH
 
 #include "sparse_matrix.h"
-#include "newmat.h"
+#include "../newmat/newmat.h"
 
 using namespace NEWMAT;
 

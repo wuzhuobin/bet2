@@ -68,7 +68,7 @@
 
 #include <cmath>
 #include "base2z.h"
-#include "libprob.h"
+#include "../libprob/libprob.h"
 
 namespace MISCMATHS {
 

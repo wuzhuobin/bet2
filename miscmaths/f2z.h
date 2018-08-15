@@ -71,8 +71,8 @@
   
 #include <iostream>
 #include <fstream>
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 #include "base2z.h"
 //#include "miscmaths.h"
 

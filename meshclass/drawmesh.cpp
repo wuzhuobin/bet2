@@ -69,8 +69,8 @@
 #include <cmath>
 #include <algorithm>
 
-#include "utils/options.h"
-#include "newimage/newimageall.h"
+#include "../utils/options.h"
+#include "../newimage/newimageall.h"
 #include "meshclass.h"
 
 using namespace std;

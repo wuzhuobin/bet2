@@ -75,8 +75,8 @@
 //#include <unistd.h>
 #include <vector>
 #include <algorithm>
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 #include "miscmaths.h"
 
 

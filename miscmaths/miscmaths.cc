@@ -74,7 +74,7 @@
 #include "miscmaths.h"
 #include "miscprob.h"
 #include "stdlib.h"
-#include "newmatio.h"
+#include "../newmat/../newmat/newmatio.h"
 
 using namespace std;
 

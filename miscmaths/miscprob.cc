@@ -70,7 +70,7 @@
 
 #include "miscprob.h"
 #include "stdlib.h"
-#include "newmatio.h"
+#include "../newmat/../newmat/newmatio.h"
 #include <iostream>
 // #include "gam.h"
 

@@ -73,7 +73,7 @@
 #include<algorithm>
 
 #include "point.h"
-#include "newimage/newimageall.h"
+#include "../newimage/newimageall.h"
 
 using namespace NEWIMAGE;
 

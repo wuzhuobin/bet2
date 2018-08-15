@@ -74,8 +74,8 @@
 #include <string>
 #include <vector>
 #include <cmath>
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 
 using namespace NEWMAT;
 

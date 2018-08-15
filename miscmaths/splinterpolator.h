@@ -74,8 +74,8 @@
 #include <vector>
 #include <string>
 #include <cmath>
-#include "newmat.h"
-#include "miscmaths/miscmaths.h"
+#include "../newmat/newmat.h"
+#include "../miscmaths/miscmaths.h"
 
 namespace SPLINTERPOLATOR {
 

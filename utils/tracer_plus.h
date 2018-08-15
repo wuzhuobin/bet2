@@ -74,8 +74,8 @@
 #include <string>
 #include <time.h>
 #include <set>
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 #include "time_tracer.h"
 
 using namespace NEWMAT;

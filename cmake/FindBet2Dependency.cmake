@@ -4,12 +4,9 @@ list(
     newmat
     fslio
     newimage
-    niftiio
-    znzlib
     meshclass
     utils
     miscmaths
-    vtkzlib
 )
 list(
     APPEND

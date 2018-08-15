@@ -6,7 +6,7 @@
 #define WANT_MATH
 
 #include "include.h"
-#include "newmatap.h"
+#include "../newmat/../newmat/../newmat/newmatap.h"
 #include "newmatrm.h"
 #include "precisio.h"
 

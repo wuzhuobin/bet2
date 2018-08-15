@@ -74,8 +74,8 @@
 #define WANT_STREAM
 #define WANT_MATH
 
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 #include "miscmaths.h"
 
 using namespace NEWMAT;

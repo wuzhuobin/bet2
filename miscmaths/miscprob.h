@@ -73,7 +73,7 @@
 #define __miscprob_h
 
 #include "miscmaths.h"
-#include "libprob.h"
+#include "../libprob/libprob.h"
 #include "stdlib.h"
 
 using namespace NEWMAT;

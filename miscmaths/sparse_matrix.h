@@ -70,11 +70,11 @@
 #define Sparse_Matrix_h
 
 #include <iostream>
-#include "newmat.h"
+#include "../newmat/newmat.h"
 #include <math.h>
 #include <map>
 #include <vector>
-#include "newmatio.h"
+#include "../newmat/newmatio.h"
 
 using namespace NEWMAT;
 using namespace std;

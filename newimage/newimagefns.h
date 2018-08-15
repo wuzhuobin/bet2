@@ -77,9 +77,9 @@
 #include <fstream>
 #include <sstream>
 #include "newimage.h"
-#include "newmatio.h"
-#include "fslio/fslio.h"
-#include "miscmaths/miscmaths.h"
+#include "../newmat/newmatio.h"
+#include "../fslio/fslio.h"
+#include "../miscmaths/miscmaths.h"
 #include "complexvolume.h"
 #include "imfft.h"
 #include <queue>

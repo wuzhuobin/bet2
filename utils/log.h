@@ -82,8 +82,8 @@ determining streaming to the Logfile and/or cout. */
 #include <string>
 #include <iomanip>
 #include <sstream>
-#include "newmatap.h"
-#include "newmatio.h"
+#include "../newmat/newmatap.h"
+#include "../newmat/newmatio.h"
 
 using namespace std;
 

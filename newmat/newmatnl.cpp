@@ -6,7 +6,7 @@
 #define WANT_MATH
 #define WANT_STREAM
 
-#include "newmatap.h"
+#include "../newmat/../newmat/../newmat/newmatap.h"
 #include "newmatnl.h"
 
 #ifdef use_namespace

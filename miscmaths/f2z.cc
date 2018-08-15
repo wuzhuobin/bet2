@@ -68,10 +68,10 @@
 
 #include <cmath>
 #include "f2z.h"
-#include "utils/log.h"
-#include "utils/tracer_plus.h"
+#include "../utils/log.h"
+#include "../utils/tracer_plus.h"
 #include <stdexcept>
-#include "libprob.h"
+#include "../libprob/libprob.h"
 
 using namespace NEWMAT;
 using namespace Utilities;

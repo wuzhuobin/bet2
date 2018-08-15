@@ -74,14 +74,14 @@
 #include <algorithm>
 #include <vector>
 #include <string>
-#include "newmatap.h"
+#include "../newmat/newmatap.h"
 #include "lazy.h"
 #include "lazyiterators.h"
 #include "positerators.h"
-#include "miscmaths/miscmaths.h"
-#include "miscmaths/kernel.h"
-#include "niftiio/nifti1.h"
-#include "miscmaths/splinterpolator.h"
+#include "../miscmaths/miscmaths.h"
+#include "../miscmaths/kernel.h"
+#include "nifti1.h"
+#include "../miscmaths/splinterpolator.h"
  
 using namespace NEWMAT;
 using namespace LAZY;

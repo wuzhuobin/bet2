@@ -71,9 +71,9 @@
 #define _GNU_SOURCE 1
 #define POSIX_SOURCE 1
 
-#include "newimage/newimageall.h"
-#include "miscmaths/miscmaths.h"
-#include "utils/options.h"
+#include "newimageall.h"
+#include "../miscmaths/miscmaths.h"
+#include "../utils/options.h"
 
 using namespace MISCMATHS;
 using namespace NEWIMAGE;

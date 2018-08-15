@@ -74,10 +74,10 @@
 #define WANT_MATH
 
 #include "sparse_matrix.h"
-#include "newmatio.h"
-#include "newmat.h"
+#include "../newmat/../newmat/newmatio.h"
+#include "../newmat/newmat.h"
 #include "miscmaths.h"
-#include "utils/tracer_plus.h"
+#include "../utils/tracer_plus.h"
 
 using namespace std;
 using namespace Utilities;

@@ -83,9 +83,9 @@
 #include <sstream>
 #include <string>
 #include <iterator>
-#include "fslio/fslio.h"
+#include "../fslio/fslio.h"
 //#include "config.h"
-#include "newmatap.h"
+#include "../newmat/../newmat/../newmat/../newmat/newmatap.h"
 #include "kernel.h"
 
 //#pragma interface

@@ -72,8 +72,8 @@
 #include <iostream>
 #include <cassert>
 #include "costfns.h"
-#include "newmatio.h"
-#include "miscmaths/miscmaths.h"
+#include "../newmat/newmatio.h"
+#include "../miscmaths/miscmaths.h"
 #include "newimage.h"
 #include "newimagefns.h"
 
