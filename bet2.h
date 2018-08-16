@@ -76,22 +76,19 @@
 #include <stdio.h>
 #include <cmath>
 #include <algorithm>
-
-#include "utils/options.h"
 #include "newimage/newimageall.h"
 #include "meshclass/meshclass.h"
 namespace bet2
 {
 using namespace std;
 using namespace NEWIMAGE;
-using namespace Utilities;
 using namespace mesh;
 
-void noMoreMemory()
-{
-  cerr<<"Unable to satisfy request for memory"<<endl;
-  abort();
-}
+//void noMoreMemory()
+//{
+//  cerr<<"Unable to satisfy request for memory"<<endl;
+//  abort();
+//}
 
 struct bet_parameters
 {
@@ -101,53 +98,7 @@ struct bet_parameters
 
 const double normal_max_update_fraction = .5;
 const double lambda_fit = .1;
-
-
 vector<float> empty_vector(0, 0);
-
-string title="BET (Brain Extraction Tool) v2.1 - FMRIB Analysis Group, Oxford";
-string examples="bet2 <input_fileroot> <output_fileroot> [options]";
-
-Option<bool> verbose(string("-v,--verbose"), false, 
-		     string("switch on diagnostic messages"), 
-		     false, no_argument);
-Option<bool> generate_mesh(string("-e,--mesh"), false, 
-		     string("generates brain surface as mesh in vtk format"), 
-		     false, no_argument);
-Option<bool> help(string("-h,--help"), false, 
-		     string("displays this help, then exits"), 
-		     false, no_argument);
-Option<bool> outline(string("-o,--outline"), false, 
-		     string("generate brain surface outline overlaid onto original image"), 
-		     false, no_argument);
-Option<bool> skull(string("-s,--skull"), false, 
-		   string("generate approximate skull image"),
-		   false, no_argument);
-Option<string> generate_mask(string("-m,--mask"), string(""),
-		  string("~<m>\tgenerate binary brain mask"), 
-      false, requires_argument);
-Option<bool> no_output(string("-n,--nooutput"), false, 
-		       string("don't generate segmented brain image output"), 
-		       false, no_argument);
-Option<bool> apply_thresholding(string("-t,--threshold"), false, 
-				string("-apply thresholding to segmented brain image and mask"), 
-				false, no_argument);
-Option<float> fractional_threshold(string("-f"), 0.5,
-				    string("~<f>\t\tfractional intensity threshold (0->1); default=0.5; smaller values give larger brain outline estimates"), false, requires_argument);
-
-Option<float> gradient_threshold(string("-g"), 0.0,
-				 string("~<g>\t\tvertical gradient in fractional intensity threshold (-1->1); default=0; positive values give larger brain outline at bottom, smaller at top"), false, requires_argument);
-
-Option<float> smootharg(string("-w,--smooth"), 1.0,
-                     string("~<r>\tsmoothness factor; default=1; values smaller than 1 produce more detailed brain surface, values larger than one produce smoother, less detailed surface"), false, requires_argument);
-
-Option<float> radiusarg(string("-r,--radius"), 0.0,
-		     string("~<r>\thead radius (mm not voxels); initial surface sphere is set to half of this"), false, requires_argument);
-
-Option<float> centerarg(string("-c"), 0.0,
-				 string("~<x y z>\tcentre-of-gravity (voxels not mm) of initial mesh surface."), false, requires_3_arguments);
-
-
 void draw_segment(volume<short>& image, const Pt& p1, const Pt& p2)
 {
   double xdim = (double) image.xdim();
