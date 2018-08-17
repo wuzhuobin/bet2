@@ -7,9 +7,9 @@ if(BUILD_TESTING)
             PROJECT_LIBRARY
             Qt5::Core
         )
-        set(CMAKE_AUTOMOC ON)
     endif()
     find_package(Qt5Test REQUIRED)
+    set(CMAKE_AUTOMOC ON)
 # Enable CTest.
     include(CTest)
     file(GLOB PROJECT_TEST_SRC ${PROJECT_SOURCE_DIR}/Testing/*.c*)

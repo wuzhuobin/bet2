@@ -1,3 +1,4 @@
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(newmat)
 add_subdirectory(fslio)
 add_subdirectory(newimage)
