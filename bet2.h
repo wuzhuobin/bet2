@@ -284,7 +284,7 @@ bet_parameters adjust_initial_mesh(const volume<float> & image, Mesh& m, const d
   //finds the COG
   Pt center(0, 0, 0);
   double counter = 0;
-  if (xpara == 0. & ypara==0. & zpara==0.)
+  if (xpara == 0. && ypara==0. && zpara==0.)
     {
       double tmp = t - t2;
       for (int k=0; k<image.zsize(); k++)

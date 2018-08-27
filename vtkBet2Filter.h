@@ -3,22 +3,18 @@
 #pragma once
 // vtk 
 #include <vtkImageAlgorithm.h>
-class vtkNIFTIImageReader;
-class vtkNIFTIImageWriter;
 class vtkBet2Filter : public vtkImageAlgorithm
 {
 public:
 	static vtkBet2Filter *New();
-	vtkTypeMacro(vtkImageAlgorithm, vtkBet2Filter);
-	virtual void PrintSelf(ostream &os, vtkIndent indent) override;
+	vtkTypeMacro(vtkBet2Filter, vtkImageAlgorithm);
+	virtual void PrintSelf(ostream &os, vtkIndent indent) VTK_OVERRIDE;
 protected:
 	vtkBet2Filter();
-	virtual ~vtkBet2Filter() override;
+	virtual ~vtkBet2Filter() VTK_OVERRIDE;
 	virtual int RequestData(vtkInformation *request,
 		vtkInformationVector **inputVector,
-		vtkInformationVector *outputVector) override;
-	vtkNIFTIImageReader *Reader;
-	vtkNIFTIImageWriter *Writer;
+		vtkInformationVector *outputVector) VTK_OVERRIDE;
 private:
 	vtkBet2Filter(const vtkBet2Filter&) VTK_DELETE_FUNCTION;
 	void operator=(const vtkBet2Filter&) VTK_DELETE_FUNCTION;

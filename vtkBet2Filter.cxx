@@ -2,8 +2,6 @@
 #include "vtkBet2Filter.h"
 #include "bet2.h"
 // vtk
-#include <vtkNIFTIImageReader.h>
-#include <vtkNIFTIImageWriter.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include <vtkImageData.h>
@@ -16,14 +14,10 @@ void vtkBet2Filter::PrintSelf(ostream & os, vtkIndent indent)
 
 vtkBet2Filter::vtkBet2Filter()
 {
-	this->Reader = vtkNIFTIImageReader::New();
-	this->Writer = vtkNIFTIImageWriter::New();
 }
 
 vtkBet2Filter::~vtkBet2Filter()
 {
-	this->Reader->Delete();
-	this->Writer->Delete();
 }
 
 int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector ** inputVector, vtkInformationVector * outputVector)
@@ -41,26 +35,43 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 	}
 	vtkImageData *output = vtkImageData::SafeDownCast(
 		outInfo->Get(vtkDataObject::DATA_OBJECT()));
-	std::string fileName = std::to_string((unsigned long long)this) + ".nii.gz";
-	this->Writer->SetInputData(input);
-	this->Writer->SetFileName(fileName.c_str());
-	this->Writer->Write();
-
+	// convert vtkImageData to NEWIMAGE::volume<float>
 	volume<float> testvol;
-	if (read_volume(testvol, fileName) < 0) {
-		vtkErrorMacro(<< "Bet read_volume falied. ");
-		return 0;
+	// allocate memory
+	testvol.reinitialize(
+		input->GetDimensions()[0],
+		input->GetDimensions()[1],
+		input->GetDimensions()[2],
+		0, true);
+	// doing copy voxel by voxel. 
+	// should be more effective way.
+	for (int x = input->GetExtent()[0]; x <= input->GetExtent()[1]; ++x) {
+		for (int y = input->GetExtent()[2]; y <= input->GetExtent()[3]; ++y) {
+			for (int z = input->GetExtent()[4]; z <= input->GetExtent()[5]; ++z) {
+				testvol(x, y, z) = input->GetScalarComponentAsFloat(x, y, z, 0);
+			}
+		}
 	}
-	if (std::remove(fileName.c_str()) != 0) {
-		vtkErrorMacro(<< "Removing file " << fileName << " failed. ");
-		return 0;
-	}
+	// setting spacing 
+	testvol.setdims(
+		input->GetSpacing()[0],
+		input->GetSpacing()[1],
+		input->GetSpacing()[2]);
+	// setting q-form, which is similiar to roientation 
+	// since vtkImageData have not orientation info, only setting its origin to 
+	// its translation component and setting orientation matrix to indentity.
+	NEWMAT::Matrix matrix(NEWMAT::IdentityMatrix(4));
+	matrix(1, 4) = input->GetOrigin()[0];
+	matrix(2, 4) = input->GetOrigin()[1];
+	matrix(3, 4) = input->GetOrigin()[2];
+	testvol.set_qform(NIFTI_XFORM_ALIGNED_ANAT, matrix);
+	//////////////////////////////////////// computation ////////////////////////////////////////
 	double xarg = 0, yarg = 0, zarg = 0;
 	const double bet_main_parameter = pow(0.5, .275);
 	// 2D kludge (worked for bet, but not here in bet2, hohum)
-	if (testvol.xsize()*testvol.xdim()<20) testvol.setxdim(200);
-	if (testvol.ysize()*testvol.ydim()<20) testvol.setydim(200);
-	if (testvol.zsize()*testvol.zdim()<20) testvol.setzdim(200);
+	if (testvol.xsize()*testvol.xdim() < 20) testvol.setxdim(200);
+	if (testvol.ysize()*testvol.ydim() < 20) testvol.setydim(200);
+	if (testvol.zsize()*testvol.zdim() < 20) testvol.setzdim(200);
 	using namespace bet2;
 	Mesh m;
 	make_mesh_from_icosa(5, m);
@@ -75,7 +86,7 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 	const double self_intersection_threshold = 4000;
 
 	double l = 0;
-	for (int i = 0; i<nb_iter; i++)
+	for (int i = 0; i < nb_iter; i++)
 	{
 		step_of_computation(testvol, m, bet_main_parameter, 0, 0, i, l, bp.t2, bp.tm, bp.t, E, F, bp.cog.Z, bp.radius, 0.0);
 	}
@@ -90,7 +101,7 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 		m = moriginal;
 		l = 0;
 		pass++;
-		for (int i = 0; i<nb_iter; i++)
+		for (int i = 0; i < nb_iter; i++)
 		{
 			double incfactor = pow(10.0, (double)pass + 1);
 			if (i > .75 * (double)nb_iter)
@@ -102,18 +113,27 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 	}
 	//display
 	volume<short> brainmask = make_mask_from_mesh(testvol, m);
-	if (save_volume(static_cast<short>(1) - brainmask, fileName) < 0) {
-		vtkErrorMacro(<< "Bet2 save_volume failed. ");
-		return 0;
-	}
-	this->Reader->SetFileName(fileName.c_str());
-	this->Reader->Update();
-	output->ShallowCopy(this->Reader->GetOutput());
-	output->SetSpacing(input->GetSpacing());
-	output->SetOrigin(input->GetOrigin());
-	if (std::remove(fileName.c_str()) != 0) {
-		vtkErrorMacro(<< "Removing file " << fileName << " failed. ");
-		return 0;
+	// coverting NEWIMAGE::volume<short> to vtkImageData
+	volume<short> outputFSL = static_cast<short>(1) - brainmask;
+	// since vtkImageData have no orientation but origin 
+	// only copy translation components. 
+	output->SetOrigin(
+		brainmask.qform_mat()(1, 4),
+		brainmask.qform_mat()(2, 4),
+		brainmask.qform_mat()(3, 4));
+	// allocate memory.
+	output->SetDimensions(
+		brainmask.xsize(), 
+		brainmask.ysize(), 
+		brainmask.zsize());
+	output->AllocateScalars(VTK_SHORT, 1);
+	output->SetSpacing(outputFSL.xdim(), outputFSL.ydim(), outputFSL.zdim());
+	for (int x = output->GetExtent()[0]; x <= output->GetExtent()[1]; ++x) {
+		for (int y = output->GetExtent()[2]; y <= output->GetExtent()[3]; ++y) {
+			for (int z = output->GetExtent()[4]; z <= output->GetExtent()[5]; ++z) {
+				*static_cast<short*>(output->GetScalarPointer(x, y, z)) = outputFSL(x, y, z);
+			}
+		}
 	}
 	return 1;
 }
