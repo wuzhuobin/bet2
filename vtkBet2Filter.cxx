@@ -37,6 +37,7 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 		outInfo->Get(vtkDataObject::DATA_OBJECT()));
 	// convert vtkImageData to NEWIMAGE::volume<float>
 	volume<float> testvol;
+//////////////////////////////////////// Copy Pointer content////////////////////////////////////////
 	// allocate memory
 	testvol.reinitialize(
 		input->GetDimensions()[0],
@@ -52,6 +53,31 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 			}
 		}
 	}
+//////////////////////////////////////// Copy Pointer content////////////////////////////////////////
+//////////////////////////////////////// Set Pointer Address //////////////////////////////////////////////////
+	//testvol.reinitialize(
+	//	input->GetDimensions()[0],
+	//	input->GetDimensions()[1],
+	//	input->GetDimensions()[2],
+	//	reinterpret_cast<float*>(input->GetScalarPointer()), false);
+	//float *data = new float[
+	//		input->GetDimensions()[0] *
+	//		input->GetDimensions()[1] *
+	//		input->GetDimensions()[2]];
+	//vtkImageExport *imageExport = vtkImageExport::New();
+	//imageExport->SetInputData(input);
+	//imageExport->Update();
+	//imageExport->Export(data);
+	//testvol.reinitialize(
+	//	imageExport->GetDataDimensions()[0],
+	//	imageExport->GetDataDimensions()[1],
+	//	imageExport->GetDataDimensions()[2],
+	//	data, true);
+	//imageExport->Delete();
+	//cout << "valueImage: " << input->GetScalarComponentAsFloat(996, 512, 13, 0) << '\n';
+	//cout << "array: " << data[13 * input->GetDimensions()[0] * input->GetDimensions()[1] + 512 * input->GetDimensions()[0] + 996];
+	//cout << "ValueVolume: " << testvol.value(996, 512, 13) << '\n';
+//////////////////////////////////////// Set Pointer Address //////////////////////////////////////////////////
 	// setting spacing 
 	testvol.setdims(
 		input->GetSpacing()[0],
@@ -65,7 +91,7 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 	matrix(2, 4) = input->GetOrigin()[1];
 	matrix(3, 4) = input->GetOrigin()[2];
 	testvol.set_qform(NIFTI_XFORM_ALIGNED_ANAT, matrix);
-	//////////////////////////////////////// computation ////////////////////////////////////////
+//////////////////////////////////////// computation ////////////////////////////////////////
 	double xarg = 0, yarg = 0, zarg = 0;
 	const double bet_main_parameter = pow(0.5, .275);
 	// 2D kludge (worked for bet, but not here in bet2, hohum)
@@ -116,6 +142,7 @@ int vtkBet2Filter::RequestData(vtkInformation * request, vtkInformationVector **
 	// coverting NEWIMAGE::volume<short> to vtkImageData
 	volume<short> outputFSL = static_cast<short>(1) - brainmask;
 	// since vtkImageData have no orientation but origin 
+//////////////////////////////////////// computation ////////////////////////////////////////
 	// only copy translation components. 
 	output->SetOrigin(
 		brainmask.qform_mat()(1, 4),

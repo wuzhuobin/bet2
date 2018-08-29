@@ -10,6 +10,7 @@
 #include <vtkDataArray.h>
 #include <vtkNIFTIImageReader.h>
 #include <vtkNIFTIImageWriter.h>
+#include <vtkImageExport.h>
 // bet2 
 #include <newimage.h>
 #include <newimageio.h>
@@ -46,7 +47,7 @@ void createSphereImage(vtkImageData *input)
 		magnitude = 1.0;
 	}
 	imageShiftScale->SetScale(255.0 / magnitude);
-	imageShiftScale->SetOutputScalarTypeToUnsignedChar();
+	imageShiftScale->SetOutputScalarTypeToDouble();
 	imageShiftScale->Update();
 	input->ShallowCopy(imageShiftScale->GetOutput());
 }
@@ -82,7 +83,21 @@ private Q_SLOTS:
 		qform(2, 4) = imageData->GetOrigin()[1];
 		qform(3, 4) = imageData->GetOrigin()[2];
 		NEWIMAGE::volume<double> volume;
-		volume.reinitialize(sx, sy, sz, 0, true);
+//////////////////////////////////////// Set Pointer Address //////////////////////////////////////////////////
+		volume.reinitialize(
+			sx,	sy,	sz,
+			reinterpret_cast<double*>(imageData->GetScalarPointer()), false);
+//////////////////////////////////////// Set Pointer Address //////////////////////////////////////////////////
+//////////////////////////////////////// Copy Pointer content////////////////////////////////////////
+		//volume.reinitialize(sx, sy, sz, 0, true);
+		//for (int x = imageData->GetExtent()[0]; x <= imageData->GetExtent()[1]; ++x) {
+		//	for (int y = imageData->GetExtent()[2]; y <= imageData->GetExtent()[3]; ++y) {
+		//		for (int z = imageData->GetExtent()[4]; z <= imageData->GetExtent()[5]; ++z) {
+		//			volume(x, y, z) = imageData->GetScalarComponentAsDouble(x, y, z, 0);
+		//		}
+		//	}
+		//}
+//////////////////////////////////////// Copy Pointer content////////////////////////////////////////
 		volume.setdims(
 			imageData->GetSpacing()[0],
 			imageData->GetSpacing()[1],
@@ -91,14 +106,8 @@ private Q_SLOTS:
 		for (int x = imageData->GetExtent()[0]; x <= imageData->GetExtent()[1]; ++x) {
 			for (int y = imageData->GetExtent()[2]; y <= imageData->GetExtent()[3]; ++y) {
 				for (int z = imageData->GetExtent()[4]; z <= imageData->GetExtent()[5]; ++z) {
-					volume(x, y, z) = imageData->GetScalarComponentAsDouble(x, y, z, 0);
-				}
-			}
-		}
-		for (int x = imageData->GetExtent()[0]; x <= imageData->GetExtent()[1]; ++x) {
-			for (int y = imageData->GetExtent()[2]; y <= imageData->GetExtent()[3]; ++y) {
-				for (int z = imageData->GetExtent()[4]; z <= imageData->GetExtent()[5]; ++z) {
-					QCOMPARE(imageData->GetScalarComponentAsDouble(x, y, z, 0), volume(x, y, z));
+					//QCOMPARE(imageData->GetScalarComponentAsDouble(x, y, z, 0), data[x*sx*sy + y*sy + z]);
+					QCOMPARE(imageData->GetScalarComponentAsDouble(x, y, z, 0), volume.value(x, y, z));
 				}
 			}
 		}
@@ -136,7 +145,7 @@ private Q_SLOTS:
 	}
 	void Update2()
 	{
-		QSKIP("Since the input data is hard coded. Please change it to your local path");
+		//QSKIP("Since the input data is hard coded. Please change it to your local path");
 		vtkSmartPointer<vtkNIFTIImageReader> reader =
 			vtkSmartPointer<vtkNIFTIImageReader>::New();
 		reader->SetFileName("C:/Users/jieji/Desktop/T2_RTHANDMOTOR_BOLD/20130610_144057T2AXTE80SENSEs301a1003.nii");
