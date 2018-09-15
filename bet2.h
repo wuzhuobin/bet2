@@ -282,7 +282,7 @@ bet_parameters adjust_initial_mesh(const volume<float> & image, Mesh& m, const d
   //  cout<<"computing center && radius begins"<<endl;
   
   //finds the COG
-  Pt center(0, 0, 0);
+  Pt centerOfMass(0, 0, 0);
   double counter = 0;
   if (xpara == 0. && ypara==0. && zpara==0.)
     {
@@ -296,16 +296,16 @@ bet_parameters adjust_initial_mesh(const volume<float> & image, Mesh& m, const d
 		{
 		  c = min(c, t98 - t2);   
 		  counter+=c;
-		  center +=  Pt(c*i*xdim, c*j*ydim, c*k*zdim);
+		  centerOfMass +=  Pt(c*i*xdim, c*j*ydim, c*k*zdim);
 		}
 	    }
-      center=Pt(center.X/counter, center.Y/counter, center.Z/counter);
+      centerOfMass=Pt(centerOfMass.X/counter, centerOfMass.Y/counter, centerOfMass.Z/counter);
       //cout<<counter<<endl;
       //  cout<<"cog "<<center.X<<" "<<center.Y<<" "<<center.Z<<endl;
     }
-  else center=Pt(xpara*xdim, ypara*ydim, zpara*zdim);
+  else centerOfMass=Pt(xpara*xdim, ypara*ydim, zpara*zdim);
   
-  bp.cog = center;
+  bp.cog = centerOfMass;
 
   if (rad == 0.)
     {
@@ -328,8 +328,8 @@ bet_parameters adjust_initial_mesh(const volume<float> & image, Mesh& m, const d
     } 
   else (bp.radius = rad);
 
-  m.translation(center.X, center.Y, center.Z);
-  m.rescale (bp.radius/2, center);
+  m.translation(centerOfMass.X, centerOfMass.Y, centerOfMass.Z);
+  m.rescale (bp.radius/2, centerOfMass);
 
   //  cout<<"computing center && radius ends"<<endl;
 
@@ -342,7 +342,7 @@ bet_parameters adjust_initial_mesh(const volume<float> & image, Mesh& m, const d
 	{
 	  double d = image.value(i, j, k);
 	  Pt p(i*xdim, j*ydim, k*zdim);
-	  if (d > t2 && d < t98 && ((p - center)|(p - center)) < bp.radius * bp.radius)
+	  if (d > t2 && d < t98 && ((p - centerOfMass)|(p - centerOfMass)) < bp.radius * bp.radius)
 	    vm.push_back(d);
 	}
 
