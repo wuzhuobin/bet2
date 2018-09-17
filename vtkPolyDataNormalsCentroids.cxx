@@ -14,13 +14,40 @@
 #include <vtkTriangleStrip.h>
 #include <vtkPriorityQueue.h>
 #include <vtkNew.h>
-vtkStandardNewMacro(vtkPolyDataNormalsCentroid);
-void vtkPolyDataNormalsCentroid::PrintSelf(ostream & os, vtkIndent indent)
+static constexpr int VTK_CELL_NOT_VISITED = 0;
+static constexpr int VTK_CELL_VISITED = 1;
+vtkStandardNewMacro(vtkPolyDataNormalsCentroids);
+
+// Construct with feature angle=30, splitting and consistency turned on,
+// flipNormals turned off, and non-manifold traversal turned on.
+vtkPolyDataNormalsCentroids::vtkPolyDataNormalsCentroids()
 {
-	Superclass::PrintSelf(os, indent);
+	this->FeatureAngle = 30.0;
+	this->Splitting = 1;
+	this->Consistency = 1;
+	this->FlipNormals = 0;
+	this->ComputePointNormals = 1;
+	this->ComputeCellNormals = 0;
+	this->ComputePointCentroids = 1;
+	this->ComputeCellCentroids = 0;
+	this->NonManifoldTraversal = 1;
+	this->AutoOrientNormals = 0;
+	// some internal data
+	this->NumFlips = 0;
+	this->OutputPointsPrecision = vtkAlgorithm::DEFAULT_PRECISION;
+	this->Wave = nullptr;
+	this->Wave2 = nullptr;
+	this->CellIds = nullptr;
+	this->Map = nullptr;
+	this->OldMesh = nullptr;
+	this->NewMesh = nullptr;
+	this->Visited = nullptr;
+	this->PolyNormals = nullptr;
+	this->PolyCentroids = nullptr;
+	this->CosAngle = 0.0;
 }
 
-int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vtkInformationVector ** inputVector, vtkInformationVector * outputVector)
+int vtkPolyDataNormalsCentroids::RequestData(vtkInformation *vtkNotUsed(info), vtkInformationVector ** inputVector, vtkInformationVector * outputVector)
 {
   // get the info objects
   vtkInformation *inInfo = inputVector[0]->GetInformationObject(0);
@@ -43,9 +70,11 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
   vtkCellArray *inPolys, *inStrips, *polys;
   vtkPoints *newPts = NULL;
   vtkFloatArray *newNormals;
+  vtkFloatArray *newCentroids;
   vtkPointData *pd, *outPD;
   vtkDataSetAttributes* outCD = output->GetCellData();
   double n[3];
+  double c[3];
   vtkCellArray *newPolys;
   vtkIdType ptId, oldId;
 
@@ -61,7 +90,8 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
 
 
   // If there is nothing to do, pass the data through
-  if ( (this->ComputePointNormals == 0 && this->ComputeCellNormals == 0) ||
+  if ( (this->ComputePointNormals == 0 && this->ComputeCellNormals == 0 &&
+	  this->ComputePointCentroids == 0 && this->ComputeCellCentroids == 0) ||
        (numPolys < 1 && numStrips < 1) )
   { //don't do anything! pass data through
     output->CopyStructure(input);
@@ -301,7 +331,11 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
   this->PolyNormals->Allocate(3*numPolys);
   this->PolyNormals->SetName("Normals");
   this->PolyNormals->SetNumberOfTuples(numPolys);
-
+  this->PolyCentroids = vtkFloatArray::New();
+  this->PolyCentroids->SetNumberOfComponents(3);
+  this->PolyCentroids->Allocate(3*numPolys);
+  this->PolyCentroids->SetName("Centroids");
+  this->PolyCentroids->SetNumberOfTuples(numPolys);
   for (cellId=0, newPolys->InitTraversal(); newPolys->GetNextCell(npts,pts);
        cellId++ )
   {
@@ -313,8 +347,14 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
         break;
       }
     }
-    vtkPolygon::ComputeNormal(inPts, npts, pts, n);
-    this->PolyNormals->SetTuple(cellId,n);
+	if (this->ComputePointCentroids || this->ComputeCellCentroids) {
+		vtkPolygon::ComputeCentroid(inPts, npts, pts, c);
+		this->PolyCentroids->SetTuple(cellId, c);
+	}
+	if (this->ComputePointNormals || this->ComputeCellNormals) {
+		vtkPolygon::ComputeNormal(inPts, npts, pts, n);
+		this->PolyNormals->SetTuple(cellId, n);
+	}
   }
 
   // Split mesh if sharp features
@@ -406,17 +446,15 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
     flipDirection = -1.0;
   }
 
-  newNormals = vtkFloatArray::New();
-  newNormals->SetNumberOfComponents(3);
-  newNormals->SetNumberOfTuples(numNewPts);
-  newNormals->SetName("Normals");
-  float *fNormals = newNormals->WritePointer(0, 3 * numNewPts);
-  std::fill_n(fNormals, 3 * numNewPts, 0);
-
-  float *fPolyNormals = this->PolyNormals->WritePointer(0, 3 * numPolys);
-
   if (this->ComputePointNormals)
   {
+	newNormals = vtkFloatArray::New();
+	newNormals->SetNumberOfComponents(3);
+	newNormals->SetNumberOfTuples(numNewPts);
+	newNormals->SetName("Normals");
+	float *fNormals = newNormals->WritePointer(0, 3 * numNewPts);
+	std::fill_n(fNormals, 3 * numNewPts, 0);
+	float *fPolyNormals = this->PolyNormals->WritePointer(0, 3 * numPolys);
     for (cellId=0, newPolys->InitTraversal(); newPolys->GetNextCell(npts, pts);
          ++cellId)
     {
@@ -440,6 +478,44 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
         fNormals[3 * i + 1] /= length;
         fNormals[3 * i + 2] /= length;
       }
+    }
+  }
+
+  if (this->ComputePointCentroids)
+  {
+	newCentroids = vtkFloatArray::New();
+	newCentroids->SetNumberOfComponents(3);
+	newCentroids->SetNumberOfTuples(numNewPts);
+	newCentroids->SetName("Centroids");
+	float *fCentroids = newCentroids->WritePointer(0, 3 * numNewPts);
+	float *fPolyCentroids = this->PolyCentroids->WritePointer(0, 3 * numPolys);
+	vtkIdType *counter = new vtkIdType[numNewPts]();
+    for (cellId=0, newPolys->InitTraversal(); newPolys->GetNextCell(npts, pts);
+         ++cellId)
+    {
+      for (vtkIdType i = 0; i < npts; ++i)
+      {
+        fCentroids[3 * pts[i]] += fPolyCentroids[3 * cellId];
+        fCentroids[3 * pts[i] + 1] += fPolyCentroids[3 * cellId + 1];
+        fCentroids[3 * pts[i] + 2] += fPolyCentroids[3 * cellId + 2];
+		++counter[pts[i]];
+      }
+    }
+
+    for (vtkIdType i = 0; i < numNewPts; ++i)
+    {
+		fCentroids[3 * i] /= counter[i];
+		fCentroids[3 * i] -= inPts->GetPoint(i)[0] / 3;
+		fCentroids[3 * i] /= 2;
+		fCentroids[3 * i] *= 3;
+		fCentroids[3 * i + 1] /= counter[i];
+		fCentroids[3 * i + 1] -= inPts->GetPoint(i)[1] / 3;
+		fCentroids[3 * i + 1] /= 2;
+		fCentroids[3 * i + 1] *= 3;
+		fCentroids[3 * i + 2] /= counter[i];
+		fCentroids[3 * i + 2] -= inPts->GetPoint(i)[2] / 3;
+		fCentroids[3 * i + 2] /= 2;
+		fCentroids[3 * i + 2] *= 3;
     }
   }
 
@@ -471,6 +547,16 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
   }
   newNormals->Delete();
 
+  if (this->ComputeCellCentroids) {
+	  outCD->AddArray(this->PolyCentroids);
+  }
+  this->PolyCentroids->Delete();
+
+  if (this->ComputePointCentroids) {
+	  outPD->AddArray(newCentroids);
+  }
+  newCentroids->Delete();
+
   output->SetPolys(newPolys);
   newPolys->Delete();
 
@@ -483,3 +569,254 @@ int vtkPolyDataNormalsCentroid::RequestData(vtkInformation *vtkNotUsed(info), vt
 
   return 1;
 }
+//  Propagate wave of consistently ordered polygons.
+//
+void vtkPolyDataNormalsCentroids::TraverseAndOrder(void)
+{
+	vtkIdType i, k;
+	int j, l, j1;
+	vtkIdType numIds, cellId;
+	vtkIdType *pts, *neiPts, npts, numNeiPts;
+	vtkIdType neighbor;
+	vtkIdList *tmpWave;
+
+	// propagate wave until nothing left in wave
+	while ((numIds = this->Wave->GetNumberOfIds()) > 0)
+	{
+		for (i = 0; i < numIds; i++)
+		{
+			cellId = this->Wave->GetId(i);
+
+			this->NewMesh->GetCellPoints(cellId, npts, pts);
+
+			for (j = 0, j1 = 1; j < npts; ++j, (j1 = (++j1 < npts) ? j1 : 0)) //for each edge neighbor
+			{
+				this->OldMesh->GetCellEdgeNeighbors(cellId, pts[j], pts[j1], this->CellIds);
+
+				//  Check the direction of the neighbor ordering.  Should be
+				//  consistent with us (i.e., if we are n1->n2,
+				// neighbor should be n2->n1).
+				if (this->CellIds->GetNumberOfIds() == 1 ||
+					this->NonManifoldTraversal)
+				{
+					for (k = 0; k < this->CellIds->GetNumberOfIds(); k++)
+					{
+						if (this->Visited[this->CellIds->GetId(k)] == VTK_CELL_NOT_VISITED)
+						{
+							neighbor = this->CellIds->GetId(k);
+							this->NewMesh->GetCellPoints(neighbor, numNeiPts, neiPts);
+							for (l = 0; l < numNeiPts; l++)
+							{
+								if (neiPts[l] == pts[j1])
+								{
+									break;
+								}
+							}
+
+							//  Have to reverse ordering if neighbor not consistent
+							//
+							if (neiPts[(l + 1) % numNeiPts] != pts[j])
+							{
+								this->NumFlips++;
+								this->NewMesh->ReverseCell(neighbor);
+							}
+							this->Visited[neighbor] = VTK_CELL_VISITED;
+							this->Wave2->InsertNextId(neighbor);
+						}// if cell not visited
+					} // for each edge neighbor
+				} //for manifold or non-manifold traversal allowed
+			} // for all edges of this polygon
+		} //for all cells in wave
+
+		  //swap wave and proceed with propagation
+		tmpWave = this->Wave;
+		this->Wave = this->Wave2;
+		this->Wave2 = tmpWave;
+		this->Wave2->Reset();
+	} //while wave still propagating
+}
+
+//
+//  Mark polygons around vertex.  Create new vertex (if necessary) and
+//  replace (i.e., split mesh).
+//
+void vtkPolyDataNormalsCentroids::MarkAndSplit(vtkIdType ptId)
+{
+	int i, j;
+
+	// Get the cells using this point and make sure that we have to do something
+	unsigned short ncells;
+	vtkIdType *cells;
+	this->OldMesh->GetPointCells(ptId, ncells, cells);
+	if (ncells <= 1)
+	{
+		return; //point does not need to be further disconnected
+	}
+
+	// Start moving around the "cycle" of points using the point. Label
+	// each point as requiring a visit. Then label each subregion of cells
+	// connected to this point that are connected (and not separated by
+	// a feature edge) with a given region number. For each N regions
+	// created, N-1 duplicate (split) points are created. The split point
+	// replaces the current point ptId in the polygons connectivity array.
+	//
+	// Start by initializing the cells as unvisited
+	for (i = 0; i<ncells; i++)
+	{
+		this->Visited[cells[i]] = -1;
+	}
+
+	// Loop over all cells and mark the region that each is in.
+	//
+	vtkIdType numPts;
+	vtkIdType *pts;
+	int numRegions = 0;
+	vtkIdType spot, neiPt[2], nei, cellId, neiCellId;
+	double thisNormal[3], neiNormal[3];
+	for (j = 0; j<ncells; j++) //for all cells connected to point
+	{
+		if (this->Visited[cells[j]] < 0) //for all unvisited cells
+		{
+			this->Visited[cells[j]] = numRegions;
+			//okay, mark all the cells connected to this seed cell and using ptId
+			this->OldMesh->GetCellPoints(cells[j], numPts, pts);
+
+			//find the two edges
+			for (spot = 0; spot < numPts; spot++)
+			{
+				if (pts[spot] == ptId)
+				{
+					break;
+				}
+			}
+
+			if (spot == 0)
+			{
+				neiPt[0] = pts[spot + 1];
+				neiPt[1] = pts[numPts - 1];
+			}
+			else if (spot == (numPts - 1))
+			{
+				neiPt[0] = pts[spot - 1];
+				neiPt[1] = pts[0];
+			}
+			else
+			{
+				neiPt[0] = pts[spot + 1];
+				neiPt[1] = pts[spot - 1];
+			}
+
+			for (i = 0; i<2; i++) //for each of the two edges of the seed cell
+			{
+				cellId = cells[j];
+				nei = neiPt[i];
+				while (cellId >= 0) //while we can grow this region
+				{
+					this->OldMesh->GetCellEdgeNeighbors(cellId, ptId, nei, this->CellIds);
+					if (this->CellIds->GetNumberOfIds() == 1 &&
+						this->Visited[(neiCellId = this->CellIds->GetId(0))] < 0)
+					{
+						this->PolyNormals->GetTuple(cellId, thisNormal);
+						this->PolyNormals->GetTuple(neiCellId, neiNormal);
+
+						if (vtkMath::Dot(thisNormal, neiNormal) > CosAngle)
+						{
+							//visit and arrange to visit next edge neighbor
+							this->Visited[neiCellId] = numRegions;
+							cellId = neiCellId;
+							this->OldMesh->GetCellPoints(cellId, numPts, pts);
+
+							for (spot = 0; spot < numPts; spot++)
+							{
+								if (pts[spot] == ptId)
+								{
+									break;
+								}
+							}
+
+							if (spot == 0)
+							{
+								nei = (pts[spot + 1] != nei ? pts[spot + 1] : pts[numPts - 1]);
+							}
+							else if (spot == (numPts - 1))
+							{
+								nei = (pts[spot - 1] != nei ? pts[spot - 1] : pts[0]);
+							}
+							else
+							{
+								nei = (pts[spot + 1] != nei ? pts[spot + 1] : pts[spot - 1]);
+							}
+
+						}//if not separated by edge angle
+						else
+						{
+							cellId = -1; //separated by edge angle
+						}
+					}//if can move to edge neighbor
+					else
+					{
+						cellId = -1;//separated by previous visit, boundary, or non-manifold
+					}
+				}//while visit wave is propagating
+			}//for each of the two edges of the starting cell
+			numRegions++;
+		}//if cell is unvisited
+	}//for all cells connected to point ptId
+
+	if (numRegions <= 1)
+	{
+		return; //a single region, no splitting ever required
+	}
+
+	// Okay, for all cells not in the first region, the ptId is
+	// replaced with a new ptId, which is a duplicate of the first
+	// point, but disconnected topologically.
+	//
+	vtkIdType lastId = this->Map->GetNumberOfIds();
+	vtkIdType replacementPoint;
+	for (j = 0; j<ncells; j++)
+	{
+		if (this->Visited[cells[j]] > 0) //replace point if splitting needed
+		{
+			replacementPoint = lastId + this->Visited[cells[j]] - 1;
+
+			this->Map->InsertId(replacementPoint, ptId);
+
+			this->NewMesh->GetCellPoints(cells[j], numPts, pts);
+			for (i = 0; i < numPts; i++)
+			{
+				if (pts[i] == ptId)
+				{
+					pts[i] = replacementPoint; // this is very nasty! direct write!
+					break;
+				}
+			}//replace ptId with split point
+		}//if not in first regions and requiring splitting
+	}//for all cells connected to ptId
+}
+
+void vtkPolyDataNormalsCentroids::PrintSelf(ostream& os, vtkIndent indent)
+{
+	this->Superclass::PrintSelf(os, indent);
+
+	os << indent << "Feature Angle: " << this->FeatureAngle << "\n";
+	os << indent << "Splitting: " << (this->Splitting ? "On\n" : "Off\n");
+	os << indent << "Consistency: " << (this->Consistency ? "On\n" : "Off\n");
+	os << indent << "Flip Normals: " << (this->FlipNormals ? "On\n" : "Off\n");
+	os << indent << "Auto Orient Normals: " << (this->AutoOrientNormals ? "On\n" : "Off\n");
+	os << indent << "Num Flips: " << this->NumFlips << endl;
+	os << indent << "Compute Point Normals: "
+		<< (this->ComputePointNormals ? "On\n" : "Off\n");
+	os << indent << "Compute Cell Normals: "
+		<< (this->ComputeCellNormals ? "On\n" : "Off\n");
+	os << indent << "Compute Point Centroids: "
+		<< (this->ComputePointCentroids ? "On\n" : "Off\n");
+	os << indent << "Compute Cell Centroids: "
+		<< (this->ComputeCellCentroids ? "On\n" : "Off\n");
+	os << indent << "Non-manifold Traversal: "
+		<< (this->NonManifoldTraversal ? "On\n" : "Off\n");
+	os << indent << "Precision of the output points: "
+		<< this->OutputPointsPrecision << "\n";
+}
+
+

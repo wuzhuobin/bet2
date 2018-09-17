@@ -85,6 +85,24 @@ public:
 
 	//@{
 	/**
+	* Turn on/off the computation of point centroids.
+	*/
+	vtkSetMacro(ComputePointCentroids, int);
+	vtkGetMacro(ComputePointCentroids, int);
+	vtkBooleanMacro(ComputePointCentroids, int);
+	//@}
+
+	//@{
+	/**
+	* Turn on/off the computation of cell centroids.
+	*/
+	vtkSetMacro(ComputeCellCentroids, int);
+	vtkGetMacro(ComputeCellCentroids, int);
+	vtkBooleanMacro(ComputeCellCentroids, int);
+	//@}
+
+	//@{
+	/**
 	* Turn on/off the global flipping of normal orientation. Flipping
 	* reverves the meaning of front and back for Frontface and Backface
 	* culling in vtkProperty.  Flipping modifies both the normal
@@ -131,6 +149,8 @@ protected:
 	int NonManifoldTraversal;
 	int ComputePointNormals;
 	int ComputeCellNormals;
+	int ComputePointCentroids;
+	int ComputeCellCentroids;
 	int NumFlips;
 	int OutputPointsPrecision;
 
@@ -143,6 +163,7 @@ private:
 	vtkPolyData *NewMesh;
 	int *Visited;
 	vtkFloatArray *PolyNormals;
+	vtkFloatArray *PolyCentroids;
 	double CosAngle;
 
 	// Uses the list of cell ids (this->Wave) to propagate a wave of
