@@ -20,6 +20,7 @@
 #include <vtkPolygon.h>
 #include <vtkCellData.h>
 #include <vtkCleanPolyData.h>
+#include <vtkPolyDataNormalsCentroids.h>
 // std 
 #include <array>
 //using namespace bet2;
@@ -163,7 +164,7 @@ BET_Parameters adjustInitialPolyData(vtkImageData *image, vtkPolyData *polyData)
 	return bp;
 }
 
-void stepOfComputation(
+void stepOfComputation_legacy(
 	vtkImageData *image, 
 	vtkPolyData *polyData, 
 	const BET_Parameters &bp, 
@@ -311,6 +312,141 @@ void stepOfComputation(
 	const double F = 6. / (1 / rmin - 1 / rmax);
 
 }
+
+void stepOfComputation(
+	vtkImageData *image,
+	vtkPolyData *polyData,
+	const BET_Parameters &bp,
+	double smoothArg) {
+	vtkSmartPointer<vtkPolyDataNormalsCentroids> normalsCentroid =
+		vtkSmartPointer<vtkPolyDataNormalsCentroids>::New();
+	normalsCentroid->SetInputData(polyData);
+	normalsCentroid->SetComputePointNormals(true);
+	normalsCentroid->SetComputePointCentroids(true);
+	normalsCentroid->Update();
+
+	polyData->ShallowCopy(normalsCentroid->GetOutput());
+	const vtkIdType numPoints = polyData->GetNumberOfPoints();
+	vtkFloatArray *points = vtkFloatArray::FastDownCast(polyData->GetPoints()->GetData());
+	float *points_f = points->WritePointer(0, 3 * numPoints);
+	vtkFloatArray *normals = vtkFloatArray::FastDownCast(polyData->GetPointData()->GetNormals());
+	float *normals_f = normals->WritePointer(0, 3 * numPoints);
+	vtkFloatArray *centroids = vtkFloatArray::FastDownCast(polyData->GetPointData()->GetArray("Centroids"));
+	float *centroids_f = centroids->WritePointer(0, 3 * numPoints);
+//////////////////////////////////////// s, st, sn ////////////////////////////////////////
+	vtkSmartPointer<vtkFloatArray> s =
+		vtkSmartPointer<vtkFloatArray>::New();
+	s->Allocate(3 * numPoints);
+	s->SetNumberOfComponents(3);
+	s->SetNumberOfTuples(numPoints);
+	s->SetName("s");
+	float *s_f = s->WritePointer(0, 3 * numPoints);
+	vtkSmartPointer<vtkFloatArray> sn =
+		vtkSmartPointer<vtkFloatArray>::New();
+	sn->Allocate(3 * numPoints);
+	sn->SetNumberOfComponents(3);
+	sn->SetNumberOfTuples(numPoints);
+	sn->SetName("sn");
+	float *sn_f = sn->WritePointer(0, 3 * numPoints);
+	memcpy(sn_f, normals_f, sizeof(float) * 3 * numPoints);
+	vtkSmartPointer<vtkFloatArray> st =
+		vtkSmartPointer<vtkFloatArray>::New();
+	st->Allocate(3 * numPoints);
+	st->SetNumberOfComponents(3);
+	st->SetNumberOfTuples(numPoints);
+	st->SetName("st");
+	float *st_f = st->WritePointer(0, 3 * numPoints);
+	for (vtkIdType id = 0; id < numPoints; ++id) {
+		vtkMath::Subtract(centroids_f + 3 * id, points_f+ 3 * id, s_f + 3 * id);
+		float tmp = vtkMath::Dot(s_f + 3 * id, normals_f + 3 * id);
+		vtkMath::MultiplyScalar(sn_f + 3 * id, tmp);
+		vtkMath::Subtract(s_f + 3 * id, sn_f + 3 * id, st_f + 3 * id);
+	}
+//////////////////////////////////////// u1 ////////////////////////////////////////
+	constexpr float f1 = 0.5f;
+	vtkSmartPointer<vtkFloatArray> u1 =
+		vtkSmartPointer<vtkFloatArray>::New();
+	u1->Allocate(3 * numPoints);
+	u1->SetNumberOfComponents(3);
+	u1->SetNumberOfTuples(numPoints);
+	u1->SetName("u1");
+	float *u1_f = u1->WritePointer(0, 3 * numPoints);
+	memcpy(u1_f, st_f, 3 * numPoints * sizeof(float));
+	for (vtkIdType id = 0; id < numPoints; ++id) {
+		vtkMath::MultiplyScalar(u1_f + id * 3, f1);
+	}
+//////////////////////////////////////// mean distance from vertex to neighboring ////////////////////////////////////////	
+	float l = 0;
+	vtkSmartPointer<vtkFloatArray> mediumDistanceOfNeighbour =
+		vtkSmartPointer<vtkFloatArray>::New();
+	mediumDistanceOfNeighbour->Allocate(numPoints);
+	mediumDistanceOfNeighbour->SetNumberOfComponents(1);
+	mediumDistanceOfNeighbour->SetNumberOfTuples(numPoints);
+	mediumDistanceOfNeighbour->SetName("mediumDistanceOfNeighbour");
+	float *mediumDistanceOfNeighbour_f =
+		mediumDistanceOfNeighbour->WritePointer(0, numPoints);
+	std::fill_n(
+		mediumDistanceOfNeighbour_f,
+		numPoints,
+		0.0f);
+	vtkSmartPointer<vtkIdTypeArray> counter =
+		vtkSmartPointer<vtkIdTypeArray>::New();
+	//counter->Allocate(numPoints);
+	counter->SetNumberOfComponents(1);
+	counter->SetNumberOfTuples(numPoints);
+	vtkIdType *counter_id = counter->WritePointer(0, numPoints);
+	polyData->BuildLinks();
+	polyData->BuildCells();
+	
+	vtkCellArray *polys = polyData->GetPolys();
+	polys->InitTraversal();
+	for (vtkIdType cid = 0; cid < polys->GetNumberOfCells(); ++cid) {
+		vtkIdType npts;
+		vtkIdType *pointIds;
+		polys->GetNextCell(npts, pointIds);
+		for (vtkIdType pid0 = 0; pid0 < npts; ++pid0) {
+			counter_id[pointIds[pid0]] += npts - 1;
+			for (vtkIdType pid1 = 0; pid1 < npts; ++pid1) {
+				// escape the same point
+				if (pointIds[pid0] != pointIds[pid1]) {
+					float diff[3];
+					vtkMath::Subtract(points_f + 3 * pointIds[pid0], points_f + 3 * pointIds[pid1], diff);
+					float norm = vtkMath::Norm(diff);
+					mediumDistanceOfNeighbour_f[pointIds[pid0]] += norm;
+				}
+			}
+		}
+	}
+	for (vtkIdType id = 0; id < numPoints; ++id) {
+		mediumDistanceOfNeighbour_f[id] /= counter_id[id];
+		l += mediumDistanceOfNeighbour_f[id];
+	}
+	l /= numPoints;
+//////////////////////////////////////// u2 ////////////////////////////////////////
+	const double rmin = 3.33 * smoothArg;
+	const double rmax = 10 * smoothArg;
+	const double E = (1 / rmin + 1 / rmax) / 2.;
+	const double F = 6. / (1 / rmin - 1 / rmax);
+	vtkSmartPointer<vtkFloatArray> u2 =
+		vtkSmartPointer<vtkFloatArray>::New();
+	u2->Allocate(3 * numPoints);
+	u2->SetNumberOfComponents(3);
+	u2->SetNumberOfTuples(numPoints);
+	u2->SetName("u2");
+	for (vtkIdType id = 0; id < numPoints; ++id) {
+		// @todo
+		// calculation in source code
+		//  rinv = (2 * fabs(sn|n))/(l*l);
+		// means: 
+		// r = l^2 / (2 * sqqrt(norm(sn)))
+		// calculation in paper
+		// r = l^2 / (2 * norm(sn))
+		// following source code for now
+		double r_inv = (2 * fabs(vtkMath::Dot(sn_f + id * 3, normals_f + id * 3))) / l * l;
+
+	}
+}
+
 void calculate()
 {
 	auto reader =
@@ -327,11 +463,11 @@ void calculate()
 	auto bp = adjustInitialPolyData(image, sphere);
 	std::cout << bp << '\n';
 	stepOfComputation(image, sphere, bp, 1.0);
-	auto polyDataWriter =
-		vtkSmartPointer<vtkPolyDataWriter>::New();
-	polyDataWriter->SetInputData(sphere);
-	polyDataWriter->SetFileName("sphere.vtk");
-	polyDataWriter->Write();
+	//auto polyDataWriter =
+	//	vtkSmartPointer<vtkPolyDataWriter>::New();
+	//polyDataWriter->SetInputData(sphere);
+	//polyDataWriter->SetFileName("sphere.vtk");
+	//polyDataWriter->Write();
 }
 
 int main(int argc, char **argv) {

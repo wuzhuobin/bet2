@@ -17,7 +17,7 @@ private Q_SLOTS:
 	void initTestCase(){}
 	void cleanupTestCase()
 	{
-		std::cin.get();
+		//std::cin.get();
 	}
 	void init() {}
 	void cleanup() {}
@@ -78,6 +78,7 @@ private Q_SLOTS:
 		for (vtkIdType id = 0; id < sphere->GetNumberOfPoints(); ++id) {
 			fMediumDistanceOfNeighbour[id] /= counter[id];
 		}
+		delete[]counter;
 		sphere->GetPointData()->AddArray(mediumDistanceOfNeighbour);
 		float medium = 0;
 		double point[3];
@@ -91,7 +92,7 @@ private Q_SLOTS:
 		vtkMath::Subtract(point, sphere->GetPoint(4), point);
 		medium += vtkMath::Norm(point);
 		medium /= 3;
-		QTRY_COMPARE(fMediumDistanceOfNeighbour[0], medium);
+		QCOMPARE(fMediumDistanceOfNeighbour[0], medium);
 		//vtkSmartPointer<vtkPolyDataWriter> writer =
 		//	vtkSmartPointer<vtkPolyDataWriter>::New();
 		//writer->SetInputData(sphere);

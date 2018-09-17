@@ -488,6 +488,7 @@ int vtkPolyDataNormalsCentroids::RequestData(vtkInformation *vtkNotUsed(info), v
 	newCentroids->SetNumberOfTuples(numNewPts);
 	newCentroids->SetName("Centroids");
 	float *fCentroids = newCentroids->WritePointer(0, 3 * numNewPts);
+	std::fill_n(fCentroids, 3 * numNewPts, 0.0f);
 	float *fPolyCentroids = this->PolyCentroids->WritePointer(0, 3 * numPolys);
 	vtkIdType *counter = new vtkIdType[numNewPts]();
     for (cellId=0, newPolys->InitTraversal(); newPolys->GetNextCell(npts, pts);
@@ -505,20 +506,20 @@ int vtkPolyDataNormalsCentroids::RequestData(vtkInformation *vtkNotUsed(info), v
     for (vtkIdType i = 0; i < numNewPts; ++i)
     {
 		fCentroids[3 * i] /= counter[i];
-		fCentroids[3 * i] -= inPts->GetPoint(i)[0] / 3;
+		fCentroids[3 * i] -= (inPts->GetPoint(i)[0] / 3);
 		fCentroids[3 * i] /= 2;
 		fCentroids[3 * i] *= 3;
 		fCentroids[3 * i + 1] /= counter[i];
-		fCentroids[3 * i + 1] -= inPts->GetPoint(i)[1] / 3;
+		fCentroids[3 * i + 1] -= (inPts->GetPoint(i)[1] / 3);
 		fCentroids[3 * i + 1] /= 2;
 		fCentroids[3 * i + 1] *= 3;
 		fCentroids[3 * i + 2] /= counter[i];
-		fCentroids[3 * i + 2] -= inPts->GetPoint(i)[2] / 3;
+		fCentroids[3 * i + 2] -= (inPts->GetPoint(i)[2] / 3);
 		fCentroids[3 * i + 2] /= 2;
 		fCentroids[3 * i + 2] *= 3;
     }
+	delete[] counter;
   }
-
   //  Update ourselves.  If no new nodes have been created (i.e., no
   //  splitting), we can simply pass data through.
   //
