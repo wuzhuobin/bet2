@@ -505,16 +505,16 @@ int vtkPolyDataNormalsCentroids::RequestData(vtkInformation *vtkNotUsed(info), v
 
     for (vtkIdType i = 0; i < numNewPts; ++i)
     {
-		fCentroids[3 * i] /= counter[i];
-		fCentroids[3 * i] -= (inPts->GetPoint(i)[0] / 3);
-		fCentroids[3 * i] /= 2;
-		fCentroids[3 * i] *= 3;
+		fCentroids[3 * i + 0] /= counter[i];
+		fCentroids[3 * i + 0] -= ((this->Splitting?newPts:inPts)->GetPoint(i)[0] / 3);
+		fCentroids[3 * i + 0] /= 2;
+		fCentroids[3 * i + 0] *= 3;
 		fCentroids[3 * i + 1] /= counter[i];
-		fCentroids[3 * i + 1] -= (inPts->GetPoint(i)[1] / 3);
+		fCentroids[3 * i + 1] -= ((this->Splitting?newPts:inPts)->GetPoint(i)[1] / 3);
 		fCentroids[3 * i + 1] /= 2;
 		fCentroids[3 * i + 1] *= 3;
 		fCentroids[3 * i + 2] /= counter[i];
-		fCentroids[3 * i + 2] -= (inPts->GetPoint(i)[2] / 3);
+		fCentroids[3 * i + 2] -= ((this->Splitting?newPts:inPts)->GetPoint(i)[2] / 3);
 		fCentroids[3 * i + 2] /= 2;
 		fCentroids[3 * i + 2] *= 3;
     }
@@ -540,23 +540,29 @@ int vtkPolyDataNormalsCentroids::RequestData(vtkInformation *vtkNotUsed(info), v
   {
     outCD->SetNormals(this->PolyNormals);
   }
-  this->PolyNormals->Delete();
+  if (this->PolyNormals != nullptr) {
+	  this->PolyNormals->Delete();
+	  this->PolyNormals = nullptr;
+  }
 
   if (this->ComputePointNormals)
   {
     outPD->SetNormals(newNormals);
+	newNormals->Delete();
   }
-  newNormals->Delete();
 
   if (this->ComputeCellCentroids) {
 	  outCD->AddArray(this->PolyCentroids);
   }
-  this->PolyCentroids->Delete();
+  if (this->PolyCentroids != nullptr) {
+	  this->PolyCentroids->Delete();
+	  this->PolyCentroids = nullptr;
+  }
 
   if (this->ComputePointCentroids) {
 	  outPD->AddArray(newCentroids);
+	  newCentroids->Delete();
   }
-  newCentroids->Delete();
 
   output->SetPolys(newPolys);
   newPolys->Delete();
